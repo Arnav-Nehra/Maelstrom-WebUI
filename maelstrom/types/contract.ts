@@ -1,9 +1,11 @@
-import { Address } from "viem";
-import { Config, UsePublicClientReturnType } from "wagmi";
-import { WriteContractMutate, WriteContractMutateAsync } from "wagmi/query";
+import { Address, ReadContractReturnType } from "viem";
+import { Config, UsePublicClientReturnType, UseReadContractReturnType } from "wagmi";
+import {  WriteContractMutateAsync } from "wagmi/query";
 import { BuyRequest, BuyResult, BuyTrade, Deposit, DepositRequest, DepositResult, SellRequest, SellResult, SellTrade, SwapRequest, SwapResult, SwapTrade, Withdraw, WithdrawRequest, WithdrawResult } from "./trades";
 import { LiquidityPoolToken, Token } from "./token";
 import { InitPool, InitPoolResult, Pool, Reserve, RowPool } from "./pool";
+
+export const CONTRACT_ADDRESS = "0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC" as Address;
 
 export interface IContractClient{
     contractAddress: Address;

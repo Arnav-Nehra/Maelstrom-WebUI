@@ -1,10 +1,9 @@
-import { wagmi_config } from "@/config";
 import { ABI, IContractClient } from "@/types/contract";
 import { InitPool, InitPoolResult, Pool, Reserve, RowPool } from "@/types/pool";
 import { LiquidityPoolToken, Token } from "@/types/token";
 import { BuyRequest, BuyResult, BuyTrade, Deposit, DepositRequest, DepositResult, SellRequest, SellResult, SellTrade, SwapRequest, SwapResult, SwapTrade, Withdraw, WithdrawRequest, WithdrawResult } from "@/types/trades";
 import { Address, erc20Abi, parseAbiItem } from "viem";
-import { Config, UsePublicClientReturnType, useReadContract, useReadContracts } from "wagmi";
+import { Config, UsePublicClientReturnType } from "wagmi";
 import { WriteContractMutateAsync } from "wagmi/query";
 
 export class ContractClient implements IContractClient {
@@ -32,14 +31,17 @@ export class ContractClient implements IContractClient {
     }
 
     private async balanceOf(token: Address, owner: Address): Promise<string> {
-        const { data, error } = await useReadContract({
-            address: token,
-            abi: erc20Abi,
-            functionName: 'balanceOf',
-            args: [owner]
-        });
-        if (error) throw new Error(`Error fetching balance: ${error.message}`);
-        return data!.toString();
+        try {
+            const data = await this.publicClient?.readContract({
+                address: token,
+                abi: erc20Abi,
+                functionName: 'balanceOf',
+                args: [owner]
+            });
+            return data!.toString();
+        } catch (error) {
+            throw new Error(`Error fetching balance: ${(error as Error).message}`);
+        }
     }
 
     async initializePool(initPool: InitPool): Promise<InitPoolResult> {
@@ -182,129 +184,147 @@ export class ContractClient implements IContractClient {
     }
 
     async getToken(token: Address): Promise<Token> {
-        const { data, error } = await useReadContracts({
-            contracts: [
-                {
+        try {
+            const [decimals, symbol, name] = await Promise.all([
+                this.publicClient?.readContract({
                     address: token as Address,
                     abi: erc20Abi,
                     functionName: 'decimals',
                     args: []
-                },
-                {
+                }),
+                this.publicClient?.readContract({
                     address: token as Address,
                     abi: erc20Abi,
                     functionName: 'symbol',
                     args: []
-                },
-                {
+                }),
+                this.publicClient?.readContract({
                     address: token as Address,
                     abi: erc20Abi,
                     functionName: 'name',
                     args: []
-                }
-            ],
-            allowFailure: false,
-        });
+                })
+            ]);
 
-        if (error) throw new Error(`Error fetching LP token data: ${error.message}`);
-        return {
-            address: token,
-            symbol: data![1],
-            name: data![2],
-            decimals: data![0],
+            return {
+                address: token,
+                symbol: symbol as string,
+                name: name as string,
+                decimals: decimals as number,
+            }
+        } catch (error) {
+            throw new Error(`Error fetching token data: ${(error as Error).message}`);
         }
     }
 
     async getLPToken(token: Token, user: Address): Promise<LiquidityPoolToken> {
-        const { data, error } = await useReadContracts({
-            contracts: [
-                {
+        try {
+            const [totalSupply, balance] = await Promise.all([
+                this.publicClient?.readContract({
                     address: token.address as Address,
                     abi: erc20Abi,
                     functionName: 'totalSupply',
                     args: []
-                },
-                {
+                }),
+                this.publicClient?.readContract({
                     address: token.address as Address,
                     abi: erc20Abi,
                     functionName: 'balanceOf',
                     args: [user]
-                },
-            ],
-            allowFailure: false,
-        });
+                })
+            ]);
 
-        if (error) throw new Error(`Error fetching LP token data: ${error.message}`);
-        return {
-            address: token.address,
-            symbol: token.symbol,
-            name: token.name,
-            decimals: token.decimals,
-            totalSupply: data![0].toString(),
-            balance: data![1].toString()
+            return {
+                address: token.address,
+                symbol: token.symbol,
+                name: token.name,
+                decimals: token.decimals,
+                totalSupply: totalSupply!.toString(),
+                balance: balance!.toString()
+            }
+        } catch (error) {
+            throw new Error(`Error fetching LP token data: ${(error as Error).message}`);
         }
     }
 
     async getReserves(token: Token): Promise<Reserve> {
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'reserves',
-            args: [token.address]
-        })
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'reserves',
+                args: [token.address]
+            })
 
-        if (error) throw new Error(`Error fetching reserves: ${error.message}`);
-        return {
-            tokenReserve: data![0].toString(),
-            ethReserve: data![1].toString()
+            if (!data) throw new Error(`Error fetching reserves`);
+            return {
+                tokenReserve: data![0].toString(),
+                ethReserve: data![1].toString()
+            }
+        } catch (error) {
+            throw new Error(`Error fetching reserves: ${(error as Error).message}`);
         }
     }
 
     async getBuyPrice(token: Token): Promise<string> {
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'priceBuy',
-            args: [token.address],
-        });
-        if (error) throw new Error(`Error fetching buy price: ${error.message}`);
-        return data!.toString();
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'priceBuy',
+                args: [token.address],
+            });
+            if (!data) throw new Error(`Error fetching buy price`);
+            return data!.toString();
+        } catch (error) {
+            throw new Error(`Error fetching buy price: ${(error as Error).message}`);
+        }
     }
 
     async getSellPrice(token: Token): Promise<string> {
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'priceSell',
-            args: [token.address],
-        });
-        if (error) throw new Error(`Error fetching sell price: ${error.message}`);
-        return data!.toString();
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'priceSell',
+                args: [token.address],
+            });
+            if (!data) throw new Error("No data returned from readContract");
+            return data!.toString();
+        } catch (error) {
+            throw new Error(`Error fetching sell price: ${(error as Error).message}`);
+        }
     }
 
     async getUserBalance(token: Token, user: Address): Promise<Reserve> {
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'poolUserBalances',
-            args: [token.address, user]
-        })
-        if (error) throw new Error(`Error fetching user reserves: ${error.message}`);
-        return {
-            tokenReserve: data![0].toString(),
-            ethReserve: data![1].toString()
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'poolUserBalances',
+                args: [token.address, user]
+            });
+            return {
+                tokenReserve: data![0].toString(),
+                ethReserve: data![1].toString()
+            }
+        } catch (error) {
+            throw new Error(`Error fetching user reserves: ${(error as Error).message}`);
         }
     }
 
     async getTokenRatio(token: Token): Promise<string> { //1 token = ? ETH
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'tokenPerETHRatio',
-            args: [token.address]
-        });
-        if (error) throw new Error(`Error fetching token ratio: ${error.message}`);
-        return data!.toString();
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'tokenPerETHRatio',
+                args: [token.address]
+            });
+            return data!.toString();
+        } catch (error) {
+            throw new Error(`Error fetching token ratio: ${(error as Error).message}`);
+        }
     }
 
     private getTotalLiquidity(avgPrice: string, tokenReserve: string): string {
@@ -568,14 +588,17 @@ export class ContractClient implements IContractClient {
     }
 
     async getLastExchangeTimestamp(token: Token): Promise<number> {
-        const { data, error } = await useReadContract({
-            address: this.contractAddress,
-            abi: ABI,
-            functionName: 'pools',
-            args: [token.address]
-        });
-        if (error) throw new Error(`Error fetching last exchange timestamp: ${error.message}`);
-        return Number(data![2]) * 1000;
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'pools',
+                args: [token.address]
+            });
+            return Number(data![2]) * 1000;
+        } catch (error) {
+            throw new Error(`Error fetching last exchange timestamp: ${(error as Error).message}`);
+        }
     }
 
     async getDepositEventLogs(fromBlock: number, toBlock: number, token?: Token, user?: Address): Promise<Deposit[]> {
@@ -697,13 +720,12 @@ export class ContractClient implements IContractClient {
 
     async getPools(startIndex: number, offset: number): Promise<RowPool[]> {
         try {
-            const { data, error } = await useReadContract({
+            const data = await this.publicClient?.readContract({
                 address: this.contractAddress,
                 abi: ABI,
                 functionName: 'getPoolList',
                 args: [BigInt(startIndex), BigInt(offset)]
-            })
-            if (error) throw new Error(`Error fetching pools: ${error.message}`);
+            });
             const tokens = await Promise.all(
                 (data as Address[]).map(async (addr) => await this.getToken(addr as Address))
             );
@@ -733,13 +755,12 @@ export class ContractClient implements IContractClient {
 
     async getUserPools(user: Address, startIndex: number, offset: number): Promise<RowPool[]> {
         try {
-            const { data, error } = await useReadContract({
+            const data = await this.publicClient?.readContract({
                 address: this.contractAddress,
                 abi: ABI,
                 functionName: 'getUserPools',
                 args: [user, BigInt(startIndex), BigInt(offset)]
-            })
-            if (error) throw new Error(`Error fetching pools: ${error.message}`);
+            });
             const tokens = await Promise.all(
                 (data as Address[]).map(async (addr) => await this.getToken(addr as Address))
             );
@@ -766,6 +787,4 @@ export class ContractClient implements IContractClient {
             throw new Error(`Error fetching pools: ${(error as Error).message}`);
         }
     }
-
-
 }

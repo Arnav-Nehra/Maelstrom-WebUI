@@ -9,14 +9,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ArrowRight, Clock, AlertTriangle, Zap } from "lucide-react";
-import { ETH, Token } from "@/lib/mock-api";
+import { Token } from "@/types/token";
 
 interface SwapPreviewModalProps {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  tokenIn: Token | ETH;
-  tokenOut: Token | ETH;
+  tokenIn: Token | undefined;
+  tokenOut: Token | undefined;
   amountIn: string;
   amountOut: string;
   loading: boolean;
@@ -32,6 +32,7 @@ export function SwapPreviewModal({
   amountOut,
   loading,
 }: SwapPreviewModalProps) {
+  if (!tokenIn || !tokenOut) return null;
   const tokenInSymbol = tokenIn.symbol.toUpperCase();
   const tokenOutSymbol = tokenOut.symbol.toUpperCase();
 

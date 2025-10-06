@@ -10,7 +10,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Search, ChevronDown } from "lucide-react";
-import { Token, Tokens } from "@/lib/mock-api";
+import {  Tokens } from "@/lib/mock-api";
+import { Token } from "@/types/token";
 
 export type ExchangeRates = {
   dai: number;
@@ -21,8 +22,8 @@ export type ExchangeRates = {
 
 
 interface TokenSelectorProps {
-  selectedToken: Token;
-  onTokenChange: (token: Token) => void;
+  selectedToken: Token | undefined;
+  onTokenChange: (token: Token) => Promise<void>;
 }
 
 export function TokenSelector({
