@@ -3,34 +3,37 @@
 import { Card } from "@/components/ui/card";
 import { useMockData } from "@/hooks/use-mock-api";
 
-export function DashboardOverview() {
-  const { portfolioValue, totalLiquidity, activePools, estimatedApr, loading } =
-    useMockData();
+interface Stat {
+  portfolioValue: string;
+  totalLiquidity: string;
+  activePools: string;
+  profit: string;
+  loading: boolean;
+}
 
+export function DashboardOverview({
+  portfolioValue,
+  totalLiquidity,
+  activePools,
+  profit,
+  loading,
+}: Stat) {
   const stats = [
     {
       label: "Portfolio Value",
       value: loading ? "..." : `${portfolioValue} ETH`,
-      change: "+12.5%",
-      isPositive: true,
     },
     {
       label: "Total Liquidity",
       value: loading ? "..." : `${totalLiquidity} ETH`,
-      change: "+8.2%",
-      isPositive: true,
     },
     {
       label: "Active Pools",
       value: loading ? "..." : activePools.toString(),
-      change: "+3",
-      isPositive: true,
     },
     {
       label: "Estimated APR",
-      value: loading ? "..." : `${estimatedApr}%`,
-      change: "+2.1%",
-      isPositive: true,
+      value: loading ? "..." : `${profit}%`,
     },
   ];
 
@@ -56,21 +59,6 @@ export function DashboardOverview() {
             {/* Label with subtle opacity */}
             <div className="text-sm text-muted-foreground/70 mb-3">
               {stat.label}
-            </div>
-
-            {/* Change indicator with glow effect */}
-            <div
-              className={`
-              inline-flex items-center text-sm font-medium rounded-full px-2.5 py-0.5
-              ${
-                stat.isPositive
-                  ? "text-emerald-400 bg-emerald-500/10"
-                  : "text-red-400 bg-red-500/10"
-              }
-              transition-transform group-hover:scale-105
-            `}
-            >
-              {stat.change}
             </div>
 
             {/* Decorative gradient corner */}

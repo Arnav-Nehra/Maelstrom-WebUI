@@ -753,6 +753,20 @@ export class ContractClient implements IContractClient {
         }
     }
 
+    async getUserLiquidity(user: Address) : Promise<string> {
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'liquidityProvided',
+                args: [user]
+            });
+            return data!.toString();
+        } catch (error) {
+            throw new Error(`Error fetching user liquidity: ${(error as Error).message}`);
+        }
+    }
+
     async getUserPools(user: Address, startIndex: number, offset: number): Promise<RowPool[]> {
         try {
             const data = await this.publicClient?.readContract({
@@ -776,11 +790,16 @@ export class ContractClient implements IContractClient {
             const liquidity = await Promise.all(
                 tokens.map(async (token, index) => await this.getTotalLiquidity(this.getAvgPrice(buyPrices[index], sellPrices[index]), reserves[index].tokenReserve))
             );
+            const lpTokens = await Promise.all(
+                tokens.map(async (token) => await this.getLPToken(token, user))
+            );
+            const userLiquidity = await this.getUserLiquidity(user);
             const result = (tokens || []).map((token, index) => ({
                 token: token,
                 buyPrice: buyPrices[index],
                 sellPrice: sellPrices[index],
                 totalLiquidity: liquidity[index],
+                lpToken: lpTokens[index]
             }));
             return result;
         } catch (error) {
@@ -788,7 +807,7 @@ export class ContractClient implements IContractClient {
         }
     }
 
-    async getPoolCount() : Promise<number> {
+    async getPoolCount(): Promise<number> {
         try {
             const data = await this.publicClient?.readContract({
                 address: this.contractAddress,
@@ -798,11 +817,11 @@ export class ContractClient implements IContractClient {
             })
             return Number(data);
         } catch (error) {
-           throw new Error(`Error fetching pool count: ${(error as Error).message}`); 
+            throw new Error(`Error fetching pool count: ${(error as Error).message}`);
         }
     }
 
-    async getUserPoolCount(user: Address) : Promise<number> {
+    async getUserPoolCount(user: Address): Promise<number> {
         try {
             const data = await this.publicClient?.readContract({
                 address: this.contractAddress,
@@ -812,7 +831,7 @@ export class ContractClient implements IContractClient {
             })
             return Number(data);
         } catch (error) {
-           throw new Error(`Error fetching user pool count: ${(error as Error).message}`); 
+            throw new Error(`Error fetching user pool count: ${(error as Error).message}`);
         }
     }
 }

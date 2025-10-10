@@ -29,7 +29,6 @@ export default function TokenPage() {
   const tokenAddress = searchParams.get("tokenAddress");
   const [token, setToken] = useState<Token | null>(null);
   const [pool, setPool] = useState<Pool | null>(null);
-  const [poolData, setPoolData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,7 +80,7 @@ export default function TokenPage() {
               className="grid grid-cols-1 lg:grid-cols-2 gap-6 animate-fade-in"
               style={{ "--delay": "200ms" } as any}
             >
-              <LiquidityBreakdown poolData={poolData} />
+              <LiquidityBreakdown poolData={pool!} />
               <LiquidityActions
                 token={token!}
                 lpToken={pool!.lpToken}

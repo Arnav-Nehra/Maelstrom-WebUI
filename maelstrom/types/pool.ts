@@ -20,6 +20,7 @@ export interface RowPool{
   buyPrice: string,
   sellPrice: string,
   totalLiquidity: string
+  lpToken?: LiquidityPoolToken
 }
 
 export interface InitPool{

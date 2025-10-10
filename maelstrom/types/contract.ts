@@ -129,6 +129,13 @@ export const ABI = [
     },
     {
         "type": "function",
+        "name": "liquidityProvided",
+        "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+        "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+        "stateMutability": "view"
+    },
+    {
+        "type": "function",
         "name": "poolList",
         "inputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
         "outputs": [{ "name": "", "type": "address", "internalType": "address" }],
