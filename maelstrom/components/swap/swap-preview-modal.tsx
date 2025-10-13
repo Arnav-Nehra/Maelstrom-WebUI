@@ -20,6 +20,7 @@ interface SwapPreviewModalProps {
   amountIn: string;
   amountOut: string;
   loading: boolean;
+  slippageTolerance?: number;
 }
 
 export function SwapPreviewModal({
@@ -31,6 +32,7 @@ export function SwapPreviewModal({
   amountIn,
   amountOut,
   loading,
+  slippageTolerance,
 }: SwapPreviewModalProps) {
   if (!tokenIn || !tokenOut) return null;
   const tokenInSymbol = tokenIn.symbol.toUpperCase();
@@ -51,7 +53,9 @@ export function SwapPreviewModal({
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div className="text-center">
-                  <p className="text-sm text-white/60 font-medium mb-1 font-plus-jakarta">You pay</p>
+                  <p className="text-sm text-white/60 font-medium mb-1 font-plus-jakarta">
+                    You pay
+                  </p>
                   <p className="text-lg font-semibold text-white/90 font-plus-jakarta">
                     {amountIn} {tokenInSymbol}
                   </p>
@@ -61,7 +65,9 @@ export function SwapPreviewModal({
                   <ArrowRight className="h-6 w-6 text-accent-cyan relative z-10" />
                 </div>
                 <div className="text-center">
-                  <p className="text-sm text-white/60 font-medium mb-1 font-plus-jakarta">You receive</p>
+                  <p className="text-sm text-white/60 font-medium mb-1 font-plus-jakarta">
+                    You receive
+                  </p>
                   <p className="text-lg font-semibold text-white/90 font-plus-jakarta">
                     {amountOut} {tokenOutSymbol}
                   </p>
@@ -75,10 +81,44 @@ export function SwapPreviewModal({
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <Clock className="h-4 w-4 text-accent-cyan" />
-                <span className="text-white/70 font-medium font-plus-jakarta">Network Fee</span>
+                <span className="text-white/70 font-medium font-plus-jakarta">
+                  Network Fee
+                </span>
               </div>
-              <span className="text-white/90 font-medium font-plus-jakarta">~$12.50</span>
+              <span className="text-white/90 font-medium font-plus-jakarta">
+                ~$12.50
+              </span>
             </div>
+
+            <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <Zap className="h-4 w-4 text-accent-cyan" />
+                <span className="text-white/70 font-medium font-plus-jakarta">
+                  Slippage Tolerance
+                </span>
+              </div>
+              <span className="text-white/90 font-medium font-plus-jakarta">
+                {slippageTolerance}%
+              </span>
+            </div>
+
+            {slippageTolerance && (
+              <div className="flex items-center justify-between text-sm border-t border-white/[0.05] pt-3">
+                <div className="flex items-center gap-2">
+                  {/* <AlertTriangle className="h-4 w-4 text-orange-400" /> */}
+                  <span className="text-white/70 font-medium font-plus-jakarta">
+                    Minimum Received
+                  </span>
+                </div>
+                <span className="text-white/90 font-medium font-plus-jakarta">
+                  {(
+                    (parseFloat(amountOut) * (100 - slippageTolerance)) /
+                    100
+                  ).toFixed(6)}{" "}
+                  {tokenOutSymbol}
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Action Buttons */}

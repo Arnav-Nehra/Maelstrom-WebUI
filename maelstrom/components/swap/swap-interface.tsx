@@ -7,8 +7,9 @@ import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
 import { BuyForm } from "@/components/swap/buy-form";
 import { SellForm } from "@/components/swap/sell-form";
 import { Button } from "@/components/ui/button";
+import { Slider } from "@/components/ui/slider";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowDownUp } from "lucide-react";
+import { ArrowDownUp, Settings } from "lucide-react";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
 import { usePublicClient, useReadContract, useWriteContract } from "wagmi";
@@ -53,6 +54,7 @@ export function SwapInterface() {
   const [tokenInSellPrice, setTokenInSellPrice] = useState<number>(0);
   const [tokenOutBuyPrice, setTokenOutBuyPrice] = useState<number>(0);
   const [fetchingRates, setFetchingRates] = useState(false);
+  const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5); // Default 0.5%
   const { toast } = useToast();
 
   const calculateOutput = (amount: string, isInput: boolean) => {
@@ -213,11 +215,17 @@ export function SwapInterface() {
       });
       return;
     }
+    
+    // Calculate minimum tokens out with slippage tolerance
+    const amountOutNum = parseFloat(swapState.amountOut);
+    const slippageMultiplier = (100 - slippageTolerance) / 100;
+    const minimumTokenOut = (amountOutNum * slippageMultiplier).toString();
+    
     const swapRequest: SwapRequest = {
       tokenIn: swapState.tokenIn,
       tokenOut: swapState.tokenOut,
       amountIn: parseEther(swapState.amountIn).toString(),
-      minimumTokenOut: parseEther(swapState.amountOut).toString(),
+      minimumTokenOut: parseEther(minimumTokenOut).toString(),
     };
     const result = await contractClient.swap(swapRequest);
     if (result.success) {
@@ -418,6 +426,41 @@ export function SwapInterface() {
                       <span className="text-white/50 font-medium">Fee</span>
                       <span className="text-white/80 font-medium">~$12.50</span>
                     </div>
+                    
+                    {/* Slippage Tolerance */}
+                    <div className="space-y-3 pt-2 border-t border-white/[0.05]">
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-white/50 font-medium flex items-center gap-2">
+                          <Settings className="h-4 w-4" />
+                          Slippage Tolerance
+                        </span>
+                        <span className="text-white/80 font-medium">
+                          {slippageTolerance}%
+                        </span>
+                      </div>
+                      <div className="px-1">
+                        <Slider
+                          value={[slippageTolerance]}
+                          onValueChange={(value) => setSlippageTolerance(value[0])}
+                          min={0.1}
+                          max={5.0}
+                          step={0.1}
+                          className="w-full [&_[data-slot=slider-track]]:bg-white/10 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-accent-cyan [&_[data-slot=slider-range]]:to-primary-500 [&_[data-slot=slider-thumb]]:border-accent-cyan/50 [&_[data-slot=slider-thumb]]:bg-gradient-to-b [&_[data-slot=slider-thumb]]:from-accent-cyan/20 [&_[data-slot=slider-thumb]]:to-primary-600/20 [&_[data-slot=slider-thumb]]:shadow-lg [&_[data-slot=slider-thumb]]:shadow-accent-cyan/25"
+                        />
+                        <div className="flex justify-between text-xs text-white/30 mt-1">
+                          <span>0.1%</span>
+                          <span>5.0%</span>
+                        </div>
+                      </div>
+                      {swapState.tokenOut && (
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="text-white/40">Minimum received:</span>
+                          <span className="text-white/60">
+                            {((parseFloat(swapState.amountOut) * (100 - slippageTolerance)) / 100).toFixed(6)} {swapState.tokenOut.symbol.toUpperCase()}
+                          </span>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 )}
 
@@ -469,6 +512,7 @@ export function SwapInterface() {
             amountIn={swapState.amountIn}
             amountOut={swapState.amountOut}
             loading={isSwapping}
+            slippageTolerance={slippageTolerance}
           />
         </div>
       </div>

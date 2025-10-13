@@ -1,7 +1,6 @@
 "use client";
 
 import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { Pool } from "@/types/pool";
 import { formatEther, parseEther } from "viem";
 
