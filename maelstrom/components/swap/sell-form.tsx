@@ -2,50 +2,61 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { TokenSelector, ExchangeRates } from "./token-selector";
+import { TokenSelector } from "./token-selector";
 import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
-import { useTrade } from "@/hooks/use-mock-api";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowDownUp } from "lucide-react";
-import {
-  BuyRequest,
-  DAI_MOCK,
-  ETH_MOCK,
-  SellResult,
-  Token,
-} from "@/lib/mock-api";
+import { usePublicClient, useWriteContract } from "wagmi";
+import { ContractClient } from "@/lib/contract-client";
+import { CONTRACT_ADDRESS } from "@/types/contract";
+import { ETH, Token } from "@/types/token";
+import { SellRequest, SellResult } from "@/types/trades";
+import { RowPool } from "@/types/pool";
+import { formatEther, parseEther } from "viem";
 
-export function SellForm() {
+interface SellFormProps {
+  tokens: RowPool[];
+  handleTokenInChange: (token: Token) => Promise<void>;
+  sellPrice: string;
+  isFetchingRates: boolean;
+}
+
+export function SellForm({
+  tokens,
+  handleTokenInChange,
+  sellPrice,
+  isFetchingRates,
+}: SellFormProps) {
+  const { writeContractAsync } = useWriteContract();
+  const publicClient = usePublicClient();
+  const contractClient = new ContractClient(
+    CONTRACT_ADDRESS,
+    writeContractAsync,
+    publicClient
+  );
   const [ethAmount, setEthAmount] = useState("");
-  const [token, setToken] = useState<Token>(DAI_MOCK);
+  const [token, setToken] = useState<Token | undefined>(undefined);
   const [tokenAmount, setTokenAmount] = useState("");
   const [showPreview, setShowPreview] = useState(false);
   const [isEthInput, setIsEthInput] = useState(false);
-  const { executeSell, loading } = useTrade();
   const { toast } = useToast();
+  const [isSwapping, setIsSwapping] = useState(false);
 
-  const exchangeRates: ExchangeRates = {
-    dai: 0.0003125,
-    usdc: 0.0003125,
-    wbtc: 21.09375,
+  const handleInputTokenChange = async (token: Token) => {
+    setToken(token);
+    await handleTokenInChange(token);
   };
 
   const handleInputChange = (value: string) => {
     if (!token) return;
     if (!isEthInput) {
       setTokenAmount(value);
-      const ethValue =
-        Number(value) *
-        exchangeRates[token.symbol.toLowerCase() as keyof ExchangeRates];
-      setEthAmount(ethValue.toFixed(6));
+      const ethValue = String(Number(value) * Number(formatEther(BigInt(sellPrice))));
+      setEthAmount(ethValue);
     } else {
       setEthAmount(value);
-      const tokenValue =
-        Number(value) /
-        exchangeRates[token.symbol.toLowerCase() as keyof ExchangeRates];
-      setTokenAmount(
-        tokenValue.toFixed(token.symbol.toLowerCase() === "wbtc" ? 8 : 6)
-      );
+      const tokenValue = String(Number(value) / Number(formatEther(BigInt(sellPrice))));
+      setTokenAmount(tokenValue);
     }
   };
 
@@ -66,12 +77,12 @@ export function SellForm() {
 
   const handleConfirmSell = async () => {
     if (!token) return;
-    const buyRequest: BuyRequest = {
+    const sellRequest: SellRequest = {
       token: token,
-      amountIn: tokenAmount,
+      amountIn: parseEther(tokenAmount).toString(),
     };
 
-    const result: SellResult = await executeSell(buyRequest);
+    const result: SellResult = await contractClient.sell(sellRequest);
     if (result.success) {
       toast({
         title: "Sell Successful!",
@@ -143,8 +154,9 @@ export function SellForm() {
               />
               <div className="ml-2">
                 <TokenSelector
-                  selectedToken={token ? token : DAI_MOCK}
-                  onTokenChange={setToken}
+                  Tokens={tokens}
+                  selectedToken={token}
+                  onTokenChange={handleInputTokenChange}
                 />
               </div>
             </>
@@ -173,8 +185,9 @@ export function SellForm() {
               />
               <div className="ml-2">
                 <TokenSelector
-                  selectedToken={token ? token : DAI_MOCK}
-                  onTokenChange={setToken}
+                  Tokens={tokens}
+                  selectedToken={token}
+                  onTokenChange={handleInputTokenChange}
                 />
               </div>
             </>
@@ -208,13 +221,13 @@ export function SellForm() {
 
       <Button
         onClick={handlePreview}
-        disabled={!ethAmount || !tokenAmount || loading}
+        disabled={!ethAmount || !tokenAmount || isSwapping}
         className="w-full h-14 mt-6 bg-gradient-to-r from-accent-cyan to-primary-500 hover:from-accent-cyan/90 hover:to-primary-500/90 
           text-white font-semibold rounded-xl shadow-lg hover:shadow-accent-cyan/25 transition-all duration-300 
           disabled:from-gray-600/50 disabled:to-gray-700/50 disabled:cursor-not-allowed disabled:text-white/50
           border border-white/[0.05] backdrop-blur-sm font-plus-jakarta text-base"
       >
-        {loading ? (
+        {isSwapping ? (
           <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white" />
         ) : (
           `Preview Sell`
@@ -226,10 +239,10 @@ export function SellForm() {
         onClose={() => setShowPreview(false)}
         onConfirm={handleConfirmSell}
         tokenIn={token!}
-        tokenOut={ETH_MOCK}
+        tokenOut={ETH}
         amountIn={tokenAmount}
         amountOut={ethAmount}
-        loading={loading}
+        loading={isSwapping}
       />
     </div>
   );

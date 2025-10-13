@@ -1,10 +1,16 @@
 "use client";
-import { usePools } from "@/hooks/use-pools";
 import { TokenRow } from "../tokens/TokenRow";
 import { TokenRowSkeleton } from "../tokens/TokenRowSkeleton";
+import { RowPool } from "@/types/pool";
 
-export function PoolsTable() {
-  const { pools, loading } = usePools();
+interface PoolsTableProps {
+  pools: RowPool[];
+  loading: boolean;
+}
+
+export function PoolsTable(
+  {pools, loading}: PoolsTableProps
+) {
   return (
     <div className="p-6">
       <div className="flex items-center justify-between mb-6">
@@ -24,7 +30,7 @@ export function PoolsTable() {
               key={ind}
               className="transform transition-all duration-200 hover:scale-[1.02] hover:shadow-glow-sm"
             >
-              <TokenRow token={pool} />
+              <TokenRow poolToken={pool} />
             </div>
           ))
         ) : (
