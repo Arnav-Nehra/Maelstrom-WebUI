@@ -5,7 +5,7 @@ import { BuyRequest, BuyResult, BuyTrade, Deposit, DepositRequest, DepositResult
 import { LiquidityPoolToken, Token } from "./token";
 import { InitPool, InitPoolResult, Pool, Reserve, RowPool } from "./pool";
 
-export const CONTRACT_ADDRESS = "0x0c0123B093C32eaF6f13EF917ED01b54E9379841" as Address;
+export const CONTRACT_ADDRESS = "0x6ed104CCf79160177668361ba006b09E429fD2d9" as Address;
 
 export interface IContractClient {
     contractAddress: Address;
