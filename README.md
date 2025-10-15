@@ -13,7 +13,7 @@
 <!-- Organization Name -->
 <div align="center">
 
-[![Static Badge](https://img.shields.io/badge/Stability_Nexus-/Maelstrom-228B22?style=for-the-badge&labelColor=FFC517)](https://hammer-auctions.stability.nexus/)
+[![Static Badge](https://img.shields.io/badge/Stability_Nexus-/Maelstrom-228B22?style=for-the-badge&labelColor=FFC517)](https://maelstrom.stability.nexus/)
 
 <!-- Correct deployed url to be added -->
 
@@ -52,7 +52,7 @@
 <h1>Maelstrom</h1>
 </div>
 
-[Maelstrom](https://hah.stability.nexus/) is a next-generation decentralized liquidity protocol that redefines token trading with fluid price discovery. Built on advanced automated market maker (AMM) technology, it provides deep liquidity pools and seamless swapping experiences for ERC-20 tokens.
+[Maelstrom](https://maelstorm.stability.nexus/) is a next-generation decentralized liquidity protocol that redefines token trading with fluid price discovery. Built on advanced automated market maker (AMM) technology, it provides deep liquidity pools and seamless swapping experiences for ERC-20 tokens.
 
 The platform is powered by smart contracts that implement:
 

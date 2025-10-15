@@ -8,7 +8,7 @@ import { ArrowDownUp } from "lucide-react";
 import { TokenSelector } from "./token-selector";
 import { Token } from "@/types/token";
 import { BuyRequest, BuyResult } from "@/types/trades";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
 import { ETH } from "@/types/token";
@@ -35,6 +35,8 @@ export function BuyForm({
     writeContractAsync,
     publicClient
   );
+  const { chain } = useAccount();
+  const baseUrl = chain?.blockExplorers?.default.url;
   const [ethAmount, setEthAmount] = useState("");
   const [tokenAmount, setTokenAmount] = useState("");
   const [showPreview, setShowPreview] = useState(false);
@@ -74,7 +76,7 @@ export function BuyForm({
 
   const handlePreview = () => {
     if (!ethAmount || !tokenAmount || !token) {
-      toast.success("Invalid Amount: Please enter an amount to buy");
+      toast.error("Invalid Amount: Please enter an amount to buy");
       return;
     }
     setShowPreview(true);
@@ -89,7 +91,21 @@ export function BuyForm({
     };
     const result: BuyResult = await contractClient.buy(request);
     if (result.success) {
-      toast.success(`Swap Successful! Tx Hash: ${result.txHash}`);
+      toast.success(
+          <div>
+            <div>Swap Successful! </div>
+            <div>
+              <a
+                href={`${baseUrl}/tx/${result.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-blue-400"
+              >
+                View on block explorer
+              </a>
+            </div>
+          </div>
+        );
     } else {
       toast.error(
         `Swap Failed!: ${

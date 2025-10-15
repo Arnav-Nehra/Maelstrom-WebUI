@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { ArrowDownUp, Settings } from "lucide-react";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { Token } from "@/types/token";
 import { BuyRequest, SellRequest, SwapRequest } from "@/types/trades";
 import { ETH_ROW_POOL, RowPool } from "@/types/pool";
@@ -35,6 +35,8 @@ export function SwapInterface() {
     writeContractAsync,
     publicClient
   );
+  const { chain } = useAccount();
+  const baseUrl = chain?.blockExplorers?.default.url;
   const [swapState, setSwapState] = useState<SwapState>({
     tokenIn: undefined,
     tokenOut: undefined,
@@ -219,7 +221,21 @@ export function SwapInterface() {
         };
         const result = await contractClient.buy(buyRequest);
         if (result.success) {
-          toast.success(`Swap Successful! Tx Hash: ${result.txHash}`);
+          toast.success(
+            <div>
+              <div>Swap Successful! </div>
+              <div>
+                <a
+                  href={`${baseUrl}/tx/${result.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-blue-400"
+                >
+                  View on block explorer
+                </a>
+              </div>
+            </div>
+          );
         } else {
           toast.error(
             `Swap Failed!: ${
@@ -237,7 +253,21 @@ export function SwapInterface() {
         };
         const result = await contractClient.sell(sellRequest);
         if (result.success) {
-          toast.success(`Swap Successful! Tx Hash: ${result.txHash}`);
+          toast.success(
+            <div>
+              <div>Swap Successful! </div>
+              <div>
+                <a
+                  href={`${baseUrl}/tx/${result.txHash}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-blue-400"
+                >
+                  View on block explorer
+                </a>
+              </div>
+            </div>
+          );
         } else {
           toast.error(
             `Swap Failed!: ${
@@ -257,7 +287,19 @@ export function SwapInterface() {
     };
     const result = await contractClient.swap(swapRequest);
     if (result.success) {
-      toast.success(`Swap Successful! Tx Hash: ${result.txHash}`);
+      toast.success(
+        <div>
+          Swap Successful!{" "}
+          <a
+            href={`${baseUrl}/tx/${result.txHash}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline text-blue-400"
+          >
+            View on block explorer
+          </a>
+        </div>
+      );
     } else {
       toast.error(
         `Swap Failed!: ${
@@ -460,7 +502,8 @@ export function SwapInterface() {
                         <span className="text-white/50 font-medium">Rate</span>
                         <span className="text-white/80 font-medium">
                           1 {swapState.tokenIn!.symbol.toUpperCase()} ={" "}
-                          {(Number(swapState.amountOut) / Number(swapState.amountIn))}{" "}
+                          {Number(swapState.amountOut) /
+                            Number(swapState.amountIn)}{" "}
                           {swapState.tokenOut!.symbol.toUpperCase()}
                         </span>
                       </div>

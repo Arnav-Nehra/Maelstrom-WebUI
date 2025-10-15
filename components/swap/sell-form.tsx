@@ -6,7 +6,7 @@ import { TokenSelector } from "./token-selector";
 import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
 import { toast } from "sonner";
 import { ArrowDownUp } from "lucide-react";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
 import { ETH, Token } from "@/types/token";
@@ -34,6 +34,8 @@ export function SellForm({
     writeContractAsync,
     publicClient
   );
+  const { chain } = useAccount();
+  const baseUrl = chain?.blockExplorers?.default.url;
   const [ethAmount, setEthAmount] = useState("");
   const [token, setToken] = useState<Token | undefined>(undefined);
   const [tokenAmount, setTokenAmount] = useState("");
@@ -85,7 +87,21 @@ export function SellForm({
 
     const result: SellResult = await contractClient.sell(sellRequest);
     if (result.success) {
-      toast.success(`Swap Successful! Tx Hash: ${result.txHash}`);
+      toast.success(
+          <div>
+            <div>Swap Successful! </div>
+            <div>
+              <a
+                href={`${baseUrl}/tx/${result.txHash}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline text-blue-400"
+              >
+                View on block explorer
+              </a>
+            </div>
+          </div>
+        );
     } else {
       toast.error(
         `Swap Failed!: ${
