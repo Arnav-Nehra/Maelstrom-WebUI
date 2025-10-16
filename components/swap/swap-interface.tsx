@@ -15,8 +15,8 @@ import { CONTRACT_ADDRESS } from "@/types/contract";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { Token } from "@/types/token";
 import { BuyRequest, SellRequest, SwapRequest } from "@/types/trades";
-import { ETH_ROW_POOL, RowPool } from "@/types/pool";
-import { parseEther } from "viem";
+import { ETH_ROW_POOL, Reserve, RowPool } from "@/types/pool";
+import { formatEther, parseEther } from "viem";
 
 interface SwapState {
   tokenIn: Token | undefined;
@@ -52,8 +52,15 @@ export function SwapInterface() {
   const [loading, setLoading] = useState(false);
   const [tokenInSellPrice, setTokenInSellPrice] = useState<number>(0);
   const [tokenOutBuyPrice, setTokenOutBuyPrice] = useState<number>(0);
+  const [ethInReserve, setEthInReserve] = useState<string | undefined>(
+    undefined
+  );
+  const [tokenOutReserve, setTokenOutReserve] = useState<string | undefined>(
+    undefined
+  );
   const [fetchingRates, setFetchingRates] = useState(false);
   const [slippageTolerance, setSlippageTolerance] = useState<number>(0.5); // Default 0.5%
+  const [validationError, setValidationError] = useState<string>("");
 
   const calculateOutput = (amount: string, isInput: boolean) => {
     if (!amount || !tokenInSellPrice || !tokenOutBuyPrice) return "";
@@ -63,11 +70,67 @@ export function SwapInterface() {
 
     if (isInput) {
       // Converting tokenIn to tokenOut: amount * sellPrice / buyPrice
-      const output = (amountNum * tokenInSellPrice) / tokenOutBuyPrice;
+      const ethAmount = amountNum * tokenInSellPrice;
+
+      if (ethInReserve) {
+        // Ensure we don't exceed the ethIn reserve by more than 10%
+        const maxEthAllowed = (Number(ethInReserve) * 0.1);
+        if (ethAmount > maxEthAllowed) {
+          const maxTokenIn = maxEthAllowed / tokenInSellPrice;
+          setValidationError(
+            `Amount exceeds 10% of reserve. Maximum: ${maxTokenIn.toFixed(6)} ${swapState.tokenIn?.symbol || ''}`
+          );
+          return "";
+        }
+      }
+
+      const output = ethAmount / tokenOutBuyPrice;
+
+      if (tokenOutReserve) {
+        console.log("checking!")
+        // Ensure we don't exceed the tokenOut reserve by more than 10%
+        const maxTokenOutAllowed = Number(tokenOutReserve) * 0.1;
+        if (output * 1e18 > maxTokenOutAllowed) {
+          const maxInput = (maxTokenOutAllowed * tokenOutBuyPrice) / tokenInSellPrice;
+          setValidationError(
+            `Output exceeds 10% of reserve. Maximum input: ${maxInput.toFixed(6)} ${swapState.tokenIn?.symbol || ''}`
+          );
+          return "";
+        }
+      }
+
+      setValidationError("");
       return output.toString();
     } else {
       // Converting tokenOut to tokenIn: amount * buyPrice / sellPrice
-      const output = (amountNum * tokenOutBuyPrice) / tokenInSellPrice;
+
+      if (tokenOutReserve) {
+        // Ensure we don't exceed the tokenOut reserve by more than 10%
+        const maxTokenOutAllowed = Number(tokenOutReserve) * 0.1;
+        if (amountNum * 1e18 > maxTokenOutAllowed) {
+          setValidationError(
+            `Amount exceeds 10% of reserve. Maximum: ${formatEther(BigInt(maxTokenOutAllowed))} ${swapState.tokenOut?.symbol || ''}`
+          );
+          return "";
+        }
+      }
+
+      const ethAmount = amountNum * tokenOutBuyPrice;
+      
+      if (ethInReserve) {
+        // Ensure we don't exceed the ethIn reserve by more than 10%
+        const maxEthAllowed = Number(ethInReserve) * 0.1;
+        if (ethAmount > maxEthAllowed) {
+          const maxTokenOut = maxEthAllowed / tokenOutBuyPrice;
+          setValidationError(
+            `Output exceeds 10% of reserve. Maximum output: ${maxTokenOut.toFixed(6)} ${swapState.tokenOut?.symbol || ''}`
+          );
+          return "";
+        }
+      }
+
+      const output = ethAmount / tokenInSellPrice;
+      setValidationError("");
       return output.toString();
     }
   };
@@ -91,15 +154,19 @@ export function SwapInterface() {
   const handletokenInChange = async (token: Token) => {
     try {
       setFetchingRates(true);
+      setValidationError(""); // Clear validation error when changing tokens
       let sellPrice = parseEther("1").toString();
+      let reserve = undefined;
       if (!(token.name === "Ether" && token.symbol === "ETH")) {
         sellPrice = await contractClient.getSellPrice(token);
+        reserve = await contractClient.getReserves(token);
       }
 
       const newSellPrice = Number(sellPrice);
       const newExchangeRate = tokenOutBuyPrice / newSellPrice;
 
       setTokenInSellPrice(newSellPrice);
+      setEthInReserve(reserve?.ethReserve);
 
       setSwapState((prev) => {
         const formattedExchangeRate =
@@ -126,14 +193,17 @@ export function SwapInterface() {
   const handletokenOutChange = async (token: Token) => {
     try {
       setFetchingRates(true);
+      setValidationError(""); // Clear validation error when changing tokens
       let buyPrice = parseEther("1").toString();
+      let reserve = undefined;
       if (!(token.name === "Ether" && token.symbol === "ETH")) {
         buyPrice = await contractClient.getBuyPrice(token);
+        reserve = await contractClient.getReserves(token);
       }
 
       const newBuyPrice = Number(buyPrice);
       const newExchangeRate = newBuyPrice / tokenInSellPrice;
-
+      setTokenOutReserve(reserve?.tokenReserve);
       setTokenOutBuyPrice(newBuyPrice);
 
       setSwapState((prev) => {
@@ -161,6 +231,7 @@ export function SwapInterface() {
   const handleSwapTokens = async () => {
     if (!swapState.tokenOut || !swapState.tokenIn) return;
     setIsSwapping(true);
+    setValidationError(""); // Clear validation error when swapping
     try {
       // Store the current tokens before swapping
       const currentTokenIn = swapState.tokenIn;
@@ -441,12 +512,36 @@ export function SwapInterface() {
                           isSwapping
                         }
                         onChange={(e) => handleAmountInChange(e.target.value)}
-                        className="w-full h-16 text-3xl font-medium bg-black/10 group-hover:bg-black/20 rounded-xl px-4 
-                          border border-white/[0.05] focus:border-accent-cyan/30 focus:ring-2 focus:ring-accent-cyan/20
-                          placeholder:text-white/20 transition-all duration-300 font-plus-jakarta"
+                        className={`w-full h-16 text-3xl font-medium bg-black/10 group-hover:bg-black/20 rounded-xl px-4 
+                          border ${validationError ? 'border-red-500/50 focus:border-red-500/70 focus:ring-2 focus:ring-red-500/20' : 'border-white/[0.05] focus:border-accent-cyan/30 focus:ring-2 focus:ring-accent-cyan/20'}
+                          placeholder:text-white/20 transition-all duration-300 font-plus-jakarta`}
                       />
                     </div>
                   </div>
+
+                  {/* Validation Error Message */}
+                  {validationError && (
+                    <div className="px-1 py-2 -my-1">
+                      <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+                        <svg 
+                          className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" 
+                          fill="none" 
+                          strokeWidth="2" 
+                          stroke="currentColor" 
+                          viewBox="0 0 24 24"
+                        >
+                          <path 
+                            strokeLinecap="round" 
+                            strokeLinejoin="round" 
+                            d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" 
+                          />
+                        </svg>
+                        <p className="text-sm text-red-300 font-medium">
+                          {validationError}
+                        </p>
+                      </div>
+                    </div>
+                  )}
 
                   {/* Swap Button */}
                   <div className="flex justify-center -my-3 relative z-10">
@@ -567,7 +662,8 @@ export function SwapInterface() {
                     !swapState.amountIn ||
                     !swapState.amountOut ||
                     isSwapping ||
-                    loading
+                    loading ||
+                    !!validationError
                   }
                   className="w-full h-14 mt-6 bg-gradient-to-r from-accent-cyan to-primary-500 hover:from-accent-cyan/90 hover:to-primary-500/90 
                     text-white font-semibold rounded-xl shadow-lg hover:shadow-accent-cyan/25 transition-all duration-300 
@@ -576,6 +672,8 @@ export function SwapInterface() {
                 >
                   {isSwapping ? (
                     <div className="animate-spin rounded-full h-5 w-5 border-2 border-white/20 border-t-white" />
+                  ) : validationError ? (
+                    "Invalid Amount"
                   ) : (
                     "Preview Swap"
                   )}
@@ -588,6 +686,7 @@ export function SwapInterface() {
                   handleTokenOutChange={handletokenOutChange}
                   buyPrice={tokenOutBuyPrice.toString()}
                   isFetchingRates={fetchingRates}
+                  tokenOutReserve={tokenOutReserve}
                 />
               </TabsContent>
 
@@ -597,6 +696,7 @@ export function SwapInterface() {
                   handleTokenInChange={handletokenInChange}
                   sellPrice={tokenInSellPrice.toString()}
                   isFetchingRates={fetchingRates}
+                  ethInReserve={ethInReserve}
                 />
               </TabsContent>
             </Tabs>

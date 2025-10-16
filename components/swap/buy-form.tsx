@@ -19,6 +19,7 @@ interface BuyFormProps {
   tokens: RowPool[];
   handleTokenOutChange: (token: Token) => Promise<void>;
   buyPrice: string;
+  tokenOutReserve: string | undefined;
   isFetchingRates: boolean;
 }
 
@@ -26,6 +27,7 @@ export function BuyForm({
   tokens,
   handleTokenOutChange,
   buyPrice,
+  tokenOutReserve,
   isFetchingRates,
 }: BuyFormProps) {
   const { writeContractAsync } = useWriteContract();
@@ -43,6 +45,7 @@ export function BuyForm({
   const [isEthInput, setIsEthInput] = useState(true);
   const [isSwapping, setIsSwapping] = useState(false);
   const [token, setToken] = useState<Token | undefined>(undefined);
+  const [validationError, setValidationError] = useState<string>("");
 
   const handleTokenChange = async (selctedToken: Token) => {
     setToken(selctedToken);
@@ -50,10 +53,19 @@ export function BuyForm({
   };
 
   const handleInputChange = async (value: string) => {
-    console.log(value);
+    setValidationError("");
     if (!token) return;
     if (!isEthInput) {
       setTokenAmount(value);
+      if (Number(value) * 1e18 > Number(tokenOutReserve) * 0.1) {
+        const maxTokenOutAllowed = (Number(tokenOutReserve) * 0.1);
+        setValidationError(
+          `Amount exceeds 10% of reserve. Maximum: ${formatEther(
+            BigInt(maxTokenOutAllowed)
+          )} ${token.symbol}`
+        );
+        return "";
+      }
       const ethValue = String(
         Number(value) * Number(formatEther(BigInt(buyPrice)))
       );
@@ -66,6 +78,15 @@ export function BuyForm({
       const tokenValue = String(
         Number(value) / Number(formatEther(BigInt(buyPrice)))
       );
+      if (Number(tokenValue) * 1e18 > Number(tokenOutReserve) * 0.1) {
+        const maxTokenOutAllowed = (Number(tokenOutReserve) * 0.1);
+        setValidationError(
+          `Amount exceeds 10% of reserve. Maximum: ${formatEther(
+            BigInt(maxTokenOutAllowed)
+          )} ${token.symbol}`
+        );
+        return "";
+      }
       setTokenAmount(tokenValue);
     }
   };
@@ -83,7 +104,7 @@ export function BuyForm({
   };
 
   const handleConfirmBuy = async () => {
-    if (!token) return;
+    if (!token || validationError) return;
     setIsSwapping(true);
     const request: BuyRequest = {
       token,
@@ -92,20 +113,20 @@ export function BuyForm({
     const result: BuyResult = await contractClient.buy(request);
     if (result.success) {
       toast.success(
+        <div>
+          <div>Swap Successful! </div>
           <div>
-            <div>Swap Successful! </div>
-            <div>
-              <a
-                href={`${baseUrl}/tx/${result.txHash}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="underline text-blue-400"
-              >
-                View on block explorer
-              </a>
-            </div>
+            <a
+              href={`${baseUrl}/tx/${result.txHash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline text-blue-400"
+            >
+              View on block explorer
+            </a>
           </div>
-        );
+        </div>
+      );
     } else {
       toast.error(
         `Swap Failed!: ${
@@ -171,6 +192,30 @@ export function BuyForm({
           )}
         </div>
       </div>
+
+      {/* Validation Error Message */}
+      {validationError && (
+        <div className="px-1 py-2 -my-1">
+          <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-xl backdrop-blur-sm">
+            <svg
+              className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5"
+              fill="none"
+              strokeWidth="2"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+            <p className="text-sm text-red-300 font-medium">
+              {validationError}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="relative bg-white/[0.02] hover:bg-white/[0.04] transition-all duration-300 rounded-2xl p-5 border border-white/[0.05] shadow-lg backdrop-blur-md group">
         <div className="flex items-center justify-between mb-3">

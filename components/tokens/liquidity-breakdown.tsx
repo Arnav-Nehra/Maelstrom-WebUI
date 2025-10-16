@@ -11,7 +11,7 @@ interface LiquidityBreakdownProps {
 export function LiquidityBreakdown({ poolData }: LiquidityBreakdownProps) {
   const APR = poolData.apr;
   const symbol = poolData.token.symbol;
-  const avgPrice = Number(formatEther(BigInt(poolData.avgPrice))).toFixed(8).replace(/\.?0+$/, '');
+  const avgPrice = (Number(poolData.avgPrice) / 1e18).toFixed(8).replace(/\.?0+$/, '');
   const tokenReserve = Number(formatEther(BigInt(poolData.reserve.tokenReserve))).toFixed(8).replace(/\.?0+$/, '');
   const ethReserve = Number(formatEther(BigInt(poolData.reserve.ethReserve))).toFixed(8).replace(/\.?0+$/, '');
   const ethPrice = 4008.92; //Mocked for now
