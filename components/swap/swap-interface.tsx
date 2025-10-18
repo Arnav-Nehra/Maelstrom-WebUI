@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, use, useMemo } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TokenSelector } from "@/components/swap/token-selector";
 import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
@@ -34,12 +34,12 @@ interface SwapState {
 const ITEMS_PER_PAGE = 10;
 
 export function SwapInterface() {
+  const { chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
   );
   const { chain } = useAccount();
   const baseUrl = chain?.blockExplorers?.default.url;
@@ -814,7 +814,9 @@ export function SwapInterface() {
             amountIn={swapState.amountIn}
             amountOut={swapState.amountOut}
             loading={loading}
-            slippageTolerance={!zeroSlippageMode?slippageTolerance:undefined}
+            slippageTolerance={
+              !zeroSlippageMode ? slippageTolerance : undefined
+            }
           />
         </div>
       </div>

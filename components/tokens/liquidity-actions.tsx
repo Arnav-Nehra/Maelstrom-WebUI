@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, use, useMemo } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -26,12 +26,12 @@ export function LiquidityActions({
   lpToken,
   poolRatio,
 }: LiquidityActionsProps) {
+  const { chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
   );
   const { chain } = useAccount();
   const baseUrl = chain?.blockExplorers?.default.url;

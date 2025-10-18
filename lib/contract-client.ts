@@ -1,4 +1,4 @@
-import { ABI, IContractClient } from "@/types/contract";
+import { ABI, CONTRACT_ADDRESSES, IContractClient } from "@/types/contract";
 import { InitPool, InitPoolResult, Pool, PoolFeesEvent, Reserve, RowPool } from "@/types/pool";
 import { LiquidityPoolToken, Token } from "@/types/token";
 import { BuyRequest, BuyResult, BuyTrade, Deposit, DepositRequest, DepositResult, SellRequest, SellResult, SellTrade, SwapRequest, SwapResult, SwapTrade, Withdraw, WithdrawRequest, WithdrawResult } from "@/types/trades";
@@ -11,8 +11,9 @@ export class ContractClient implements IContractClient {
     writeContract: WriteContractMutateAsync<Config, unknown>
     publicClient: UsePublicClientReturnType;
 
-    constructor(contractAddress: Address, writeContract: WriteContractMutateAsync<Config, unknown>, publicClient: UsePublicClientReturnType) {
-        this.contractAddress = contractAddress;
+    constructor(writeContract: WriteContractMutateAsync<Config, unknown>, publicClient: UsePublicClientReturnType, chainId?: number) {
+        this.contractAddress = chainId ? CONTRACT_ADDRESSES[chainId] : CONTRACT_ADDRESSES[63];
+        console.log("Initializing ContractClient for chainId:",this.contractAddress);
         this.writeContract = writeContract;
         this.publicClient = publicClient;
     }

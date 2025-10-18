@@ -44,6 +44,17 @@ export interface IContractClient {
     getUserPoolCount(user: Address): Promise<number>
 }
 
+export const CONTRACT_ADDRESSES: Record<number, Address> = {
+    1: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // Ethereum Mainnet
+    61: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // Ethereum Classic
+    63: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // ETC Testnet(Mordor)
+    137: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // Polygon
+    56: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // BSC
+    8453: "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address, // BASE
+    5115: "0x76A5ef90eac5dd9B99F87470935c8bcDE7dd02B4" as Address, // Citera Testnet
+
+}
+
 export const ABI = [
     {
       "type": "constructor",

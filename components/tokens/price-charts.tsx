@@ -16,7 +16,7 @@ import { Pool } from "@/types/pool";
 import { BuyTrade, SellTrade } from "@/types/trades";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { formatEther } from "viem";
 import { RefreshCw, Clock, TrendingUp, TrendingDown } from "lucide-react";
 
@@ -43,13 +43,11 @@ export function PriceCharts({ token, pool }: PriceChartsProps) {
   const [error, setError] = useState<string | null>(null);
   const [nextBlockToFetch, setNextBlockToFetch] = useState<number | null>(null);
   const [hasMoreData, setHasMoreData] = useState(true);
-  const contractClient = useMemo(() => {
-    return new ContractClient(
-      CONTRACT_ADDRESS,
-      writeContractAsync,
-      publicClient
-    );
-  }, [writeContractAsync, publicClient]);
+  const { chainId } = useAccount();
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
+  );
 
   const generateChartData = useCallback(
     (buyTrades: BuyTrade[], sellTrades: SellTrade[]): ChartDataPoint[] => {
@@ -91,11 +89,11 @@ export function PriceCharts({ token, pool }: PriceChartsProps) {
           time: tradeDate.toISOString(),
           buyPrice: trade.type === "buy" ? trade.buyPrice : lastBuyPrice,
           sellPrice: trade.type === "sell" ? trade.sellPrice : lastSellPrice,
-          formattedTime: tradeDate.toLocaleString('en-US', { 
-            month: 'short', 
-            day: 'numeric', 
-            hour: '2-digit', 
-            minute: '2-digit' 
+          formattedTime: tradeDate.toLocaleString("en-US", {
+            month: "short",
+            day: "numeric",
+            hour: "2-digit",
+            minute: "2-digit",
           }),
           timestamp: trade.timestamp,
         };
@@ -187,11 +185,11 @@ export function PriceCharts({ token, pool }: PriceChartsProps) {
         time: now.toISOString(),
         buyPrice: currentBuyPrice,
         sellPrice: currentSellPrice,
-        formattedTime: now.toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          hour: '2-digit', 
-          minute: '2-digit' 
+        formattedTime: now.toLocaleString("en-US", {
+          month: "short",
+          day: "numeric",
+          hour: "2-digit",
+          minute: "2-digit",
         }),
         timestamp: Date.now(),
       },

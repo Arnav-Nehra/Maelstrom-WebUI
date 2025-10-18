@@ -14,18 +14,22 @@ import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
 import { InitPool } from "@/types/pool";
-import { useState } from "react";
+import { use, useMemo, useState } from "react";
 import { toast } from "sonner";
 import { parseEther, isAddress, Address } from "viem";
 import { Loader2, Plus } from "lucide-react";
 
 export default function CreatePoolPage() {
+  const {chainId} = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
+  const contractClient = useMemo(
+    () => new ContractClient(
+      writeContractAsync,
+      publicClient,
+      chainId
+    ),
+    [chainId]
   );
   const { chain, isConnected } = useAccount();
   const baseUrl = chain?.blockExplorers?.default.url;
@@ -151,7 +155,7 @@ export default function CreatePoolPage() {
         inititalBuyPrice: buyPriceWei,
         initialSellPrice: sellPriceWei,
       };
-
+      
       const result = await contractClient.initializePool(initPoolData);
 
       if (result.success) {

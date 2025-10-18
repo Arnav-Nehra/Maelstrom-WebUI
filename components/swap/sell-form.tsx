@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { TokenSelector } from "./token-selector";
 import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
@@ -42,12 +42,12 @@ export function SellForm({
   slippageTolerance,
   setSlippageTolerance,
 }: SellFormProps) {
+  const { chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
   );
   const { chain } = useAccount();
   const baseUrl = chain?.blockExplorers?.default.url;
@@ -395,7 +395,7 @@ export function SellForm({
         amountIn={tokenAmount}
         amountOut={ethAmount}
         loading={isSwapping}
-        slippageTolerance={!zeroSlippageMode?slippageTolerance:undefined}
+        slippageTolerance={!zeroSlippageMode ? slippageTolerance : undefined}
       />
     </div>
   );

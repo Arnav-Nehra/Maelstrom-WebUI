@@ -7,20 +7,24 @@ import { DashboardSkeleton } from "@/components/dashboard/dashboard-skeleton";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { RowPool } from "@/types/pool";
 import { toast } from "sonner";
 import { formatEther } from "viem";
 import { Deposit, Withdraw } from "@/types/trades";
 
 export default function DashboardPage() {
+  const { chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
-  );
+  const contractClient = useMemo(
+      () => new ContractClient(
+        writeContractAsync,
+        publicClient,
+        chainId
+      ),
+      [chainId]
+    );
   const { address } = useAccount();
   const [totalPools, setTotalPools] = useState<number>(0);
   // const [totalLiquidity, setTotalLiquidity] = useState<string>("0");

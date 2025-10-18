@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { SwapPreviewModal } from "@/components/swap/swap-preview-modal";
 import { toast } from "sonner";
@@ -14,7 +14,12 @@ import { CONTRACT_ADDRESS } from "@/types/contract";
 import { ETH } from "@/types/token";
 import { RowPool } from "@/types/pool";
 import { formatEther, parseEther } from "viem";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "../ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "../ui/tooltip";
 import { Slider } from "../ui/slider";
 
 interface BuyFormProps {
@@ -38,12 +43,12 @@ export function BuyForm({
   slippageTolerance,
   setSlippageTolerance,
 }: BuyFormProps) {
+  const { chainId } = useAccount();
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
-  const contractClient = new ContractClient(
-    CONTRACT_ADDRESS,
-    writeContractAsync,
-    publicClient
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
   );
   const { chain } = useAccount();
   const baseUrl = chain?.blockExplorers?.default.url;
@@ -275,84 +280,79 @@ export function BuyForm({
         </div>
       </div>
 
-      {token &&
-        tokenAmount &&
-        !isFetchingRates &&
-        !isSwapping && (
-          <div className="mt-5 space-y-3 p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl backdrop-blur-sm">
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-white/50 font-medium">Rate</span>
-              <span className="text-white/80 font-medium">
-                1 {token.symbol.toUpperCase()} ={" "}
-                {Number(ethAmount) / Number(tokenAmount)}{" "}
-                {"ETH"}
-              </span>
-            </div>
-            {/* Slippage Tolerance - Only show in Advanced Mode */}
-            {!zeroSlippageMode && (
-              <div className="space-y-3 pt-2 border-t border-white/[0.05]">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-white/50 font-medium flex items-center gap-2">
-                    <Settings className="h-4 w-4" />
-                    Slippage Tolerance
-                    <TooltipProvider>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <HelpCircle className="h-3.5 w-3.5 text-white/30 hover:text-white/50 transition-colors cursor-help" />
-                        </TooltipTrigger>
-                        <TooltipContent className="max-w-xs bg-gradient-to-b from-bg-800/95 to-bg-900/95 border border-white/10 p-3 backdrop-blur-xl">
-                          <p className="text-sm text-white/90 leading-relaxed">
-                            <span className="font-semibold text-accent-cyan">
-                              Auction-Based Slippage:
-                            </span>{" "}
-                            If transactions occur before yours, the price may
-                            change. You might receive more or less tokens than
-                            expected. Increasing slippage tolerance raises the
-                            chance your transaction succeeds, as it will execute
-                            if the final amount is above your minimum acceptable
-                            threshold.
-                          </p>
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  </span>
-                  <span className="text-white/80 font-medium">
-                    {slippageTolerance}%
-                  </span>
-                </div>
-
-                <div className="px-1">
-                  <Slider
-                    value={[slippageTolerance]}
-                    onValueChange={(value) => setSlippageTolerance(value[0])}
-                    min={0.1}
-                    max={5.0}
-                    step={0.1}
-                    className="w-full [&_[data-slot=slider-track]]:bg-white/10 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-accent-cyan [&_[data-slot=slider-range]]:to-primary-500 [&_[data-slot=slider-thumb]]:border-accent-cyan/50 [&_[data-slot=slider-thumb]]:bg-gradient-to-b [&_[data-slot=slider-thumb]]:from-accent-cyan/20 [&_[data-slot=slider-thumb]]:to-primary-600/20 [&_[data-slot=slider-thumb]]:shadow-lg [&_[data-slot=slider-thumb]]:shadow-accent-cyan/25"
-                  />
-                  <div className="flex justify-between text-xs text-white/30 mt-1">
-                    <span>0.1%</span>
-                    <span>5.0%</span>
-                  </div>
-                </div>
-
-                {token && tokenAmount && (
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="text-white/40">Minimum received:</span>
-                    <span className="text-white/60">
-                      {(
-                        (parseFloat(tokenAmount) *
-                          (100 - slippageTolerance)) /
-                        100
-                      ).toFixed(6)}{" "}
-                      {token.symbol.toUpperCase()}
-                    </span>
-                  </div>
-                )}
-              </div>
-            )}
+      {token && tokenAmount && !isFetchingRates && !isSwapping && (
+        <div className="mt-5 space-y-3 p-4 bg-white/[0.02] border border-white/[0.05] rounded-xl backdrop-blur-sm">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-white/50 font-medium">Rate</span>
+            <span className="text-white/80 font-medium">
+              1 {token.symbol.toUpperCase()} ={" "}
+              {Number(ethAmount) / Number(tokenAmount)} {"ETH"}
+            </span>
           </div>
-        )}
+          {/* Slippage Tolerance - Only show in Advanced Mode */}
+          {!zeroSlippageMode && (
+            <div className="space-y-3 pt-2 border-t border-white/[0.05]">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-white/50 font-medium flex items-center gap-2">
+                  <Settings className="h-4 w-4" />
+                  Slippage Tolerance
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <HelpCircle className="h-3.5 w-3.5 text-white/30 hover:text-white/50 transition-colors cursor-help" />
+                      </TooltipTrigger>
+                      <TooltipContent className="max-w-xs bg-gradient-to-b from-bg-800/95 to-bg-900/95 border border-white/10 p-3 backdrop-blur-xl">
+                        <p className="text-sm text-white/90 leading-relaxed">
+                          <span className="font-semibold text-accent-cyan">
+                            Auction-Based Slippage:
+                          </span>{" "}
+                          If transactions occur before yours, the price may
+                          change. You might receive more or less tokens than
+                          expected. Increasing slippage tolerance raises the
+                          chance your transaction succeeds, as it will execute
+                          if the final amount is above your minimum acceptable
+                          threshold.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </span>
+                <span className="text-white/80 font-medium">
+                  {slippageTolerance}%
+                </span>
+              </div>
+
+              <div className="px-1">
+                <Slider
+                  value={[slippageTolerance]}
+                  onValueChange={(value) => setSlippageTolerance(value[0])}
+                  min={0.1}
+                  max={5.0}
+                  step={0.1}
+                  className="w-full [&_[data-slot=slider-track]]:bg-white/10 [&_[data-slot=slider-range]]:bg-gradient-to-r [&_[data-slot=slider-range]]:from-accent-cyan [&_[data-slot=slider-range]]:to-primary-500 [&_[data-slot=slider-thumb]]:border-accent-cyan/50 [&_[data-slot=slider-thumb]]:bg-gradient-to-b [&_[data-slot=slider-thumb]]:from-accent-cyan/20 [&_[data-slot=slider-thumb]]:to-primary-600/20 [&_[data-slot=slider-thumb]]:shadow-lg [&_[data-slot=slider-thumb]]:shadow-accent-cyan/25"
+                />
+                <div className="flex justify-between text-xs text-white/30 mt-1">
+                  <span>0.1%</span>
+                  <span>5.0%</span>
+                </div>
+              </div>
+
+              {token && tokenAmount && (
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-white/40">Minimum received:</span>
+                  <span className="text-white/60">
+                    {(
+                      (parseFloat(tokenAmount) * (100 - slippageTolerance)) /
+                      100
+                    ).toFixed(6)}{" "}
+                    {token.symbol.toUpperCase()}
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       <Button
         onClick={handlePreview}
@@ -378,7 +378,7 @@ export function BuyForm({
         amountIn={ethAmount}
         amountOut={tokenAmount}
         loading={isSwapping}
-        slippageTolerance={!zeroSlippageMode?slippageTolerance:undefined}
+        slippageTolerance={!zeroSlippageMode ? slippageTolerance : undefined}
       />
     </div>
   );

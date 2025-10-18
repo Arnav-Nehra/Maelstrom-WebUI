@@ -5,7 +5,7 @@ import { TokenRowSkeleton } from "./TokenRowSkeleton";
 import { TokenSearchBar } from "./TokenSearchBar";
 import { Search } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState, useRef } from "react";
-import { usePublicClient, useWriteContract } from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { ContractClient } from "@/lib/contract-client";
 import { CONTRACT_ADDRESS } from "@/types/contract";
 import { RowPool } from "@/types/pool";
@@ -20,13 +20,11 @@ export function TokenList() {
   const { writeContractAsync } = useWriteContract();
   const publicClient = usePublicClient();
 
-  const contractClient = useMemo(() => {
-    return new ContractClient(
-      CONTRACT_ADDRESS,
-      writeContractAsync,
-      publicClient
-    );
-  }, [writeContractAsync, publicClient]);
+  const { chainId } = useAccount();
+  const contractClient = useMemo(
+    () => new ContractClient(writeContractAsync, publicClient, chainId),
+    [chainId]
+  );
 
   const [tokens, setTokens] = useState<RowPool[]>([]);
   const [totalPools, setTotalPools] = useState(0);
@@ -41,6 +39,7 @@ export function TokenList() {
     try {
       const poolCount = await contractClient.getPoolCount();
       setTotalPools(poolCount);
+      console.log("Total pools available:", poolCount);
     } catch (error) {
       console.error("Error fetching total pools:", error);
       const errorMessage =
