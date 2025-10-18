@@ -5,7 +5,7 @@ import { BuyRequest, BuyResult, BuyTrade, Deposit, DepositRequest, DepositResult
 import { LiquidityPoolToken, Token } from "./token";
 import { InitPool, InitPoolResult, Pool, PoolFeesEvent, Reserve, RowPool } from "./pool";
 
-export const CONTRACT_ADDRESS = "0x6ed104CCf79160177668361ba006b09E429fD2d9" as Address;
+export const CONTRACT_ADDRESS = "0x897CeF988A12AB77A12fd8f2Ca74F0B978d302CF" as Address;
 
 export interface IContractClient {
     contractAddress: Address;
@@ -30,7 +30,7 @@ export interface IContractClient {
     getTotalFees(): Promise<string>
     getTotalPoolFee(token: Token): Promise<string>
     getPoolFeeEvents(token: Token, startIndex: number, endIndex: number): Promise<PoolFeesEvent[]>
-    getYield(feeEvents: PoolFeesEvent[]): number
+    getYield(feeEvents: PoolFeesEvent[], totalLiquidity: string): number
 
     getBuyTradeEventLogs(fromBlock: number, toBlock: number, token?: Token, user?: Address): Promise<BuyTrade[]>
     getSellTradeEventLogs(fromBlock: number, toBlock: number, token?: Token, user?: Address): Promise<SellTrade[]>
@@ -90,6 +90,15 @@ export const ABI = [
       "type": "function",
       "name": "ethBalance",
       "inputs": [{ "name": "", "type": "address", "internalType": "address" }],
+      "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getPoolFeeEventsCount",
+      "inputs": [
+        { "name": "token", "type": "address", "internalType": "address" }
+      ],
       "outputs": [{ "name": "", "type": "uint256", "internalType": "uint256" }],
       "stateMutability": "view"
     },

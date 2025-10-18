@@ -23,9 +23,9 @@ export default function DashboardPage() {
   );
   const { address } = useAccount();
   const [totalPools, setTotalPools] = useState<number>(0);
-  const [totalLiquidity, setTotalLiquidity] = useState<string>("0");
+  // const [totalLiquidity, setTotalLiquidity] = useState<string>("0");
   const [portfolioValue, setPortfolioValue] = useState<string>("0");
-  const [totalProfit, setTotalProfit] = useState<string>("0");
+  // const [totalProfit, setTotalProfit] = useState<string>("0");
   const [events, setEvents] = useState<(Deposit | Withdraw)[]>([]);
   const [pools, setPools] = useState<RowPool[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -131,9 +131,9 @@ export default function DashboardPage() {
         if (count === undefined) throw new Error("Pool count is undefined");
         
         await fetchUserPools(count);
-        const liquidity = await contractClient.getUserLiquidity(address);
-        const liquidityFormatted = formatEther(BigInt(liquidity));
-        setTotalLiquidity(liquidityFormatted);
+        // const liquidity = await contractClient.getUserLiquidity(address);
+        // const liquidityFormatted = formatEther(BigInt(liquidity));
+        // setTotalLiquidity(liquidityFormatted);
         
         await fetchRecentDeposits();
         await fetchRecentWithdrawals();
@@ -150,14 +150,14 @@ export default function DashboardPage() {
   }, [address]);
 
   // Separate effect to calculate values when pools or liquidity changes
-  useEffect(() => {
-    if (pools.length > 0 && totalLiquidity !== "0") {
-      const portfolio = calculatePortfolioValue(pools);
-      setPortfolioValue(portfolio);
-      const profit = calculateProfit(portfolio, totalLiquidity);
-      setTotalProfit(profit);
-    }
-  }, [pools, totalLiquidity]);
+  // useEffect(() => {
+  //   if (pools.length > 0 && totalLiquidity !== "0") {
+  //     const portfolio = calculatePortfolioValue(pools);
+  //     setPortfolioValue(portfolio);
+  //     const profit = calculateProfit(portfolio, totalLiquidity);
+  //     setTotalProfit(profit);
+  //   }
+  // }, [pools, totalLiquidity]);
 
   if (isLoading) {
     return <DashboardSkeleton />;
@@ -189,8 +189,8 @@ export default function DashboardPage() {
           {/* Overview Cards */}
           <DashboardOverview
             portfolioValue={portfolioValue}
-            totalLiquidity={totalLiquidity}
-            profit={totalProfit}
+            // totalLiquidity={totalLiquidity}
+            // profit={totalProfit}
             activePools={totalPools.toString()}
             loading={isLoading}
           />

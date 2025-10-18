@@ -4,17 +4,17 @@ import { Card } from "@/components/ui/card";
 
 interface Stat {
   portfolioValue: string;
-  totalLiquidity: string;
+  // totalLiquidity: string;
   activePools: string;
-  profit: string;
+  // profit: string;
   loading: boolean;
 }
 
 export function DashboardOverview({
   portfolioValue,
-  totalLiquidity,
+  // totalLiquidity,
   activePools,
-  profit,
+  // profit,
   loading,
 }: Stat) {
   const stats = [
@@ -22,18 +22,18 @@ export function DashboardOverview({
       label: "Portfolio Value",
       value: loading ? "..." : `${Number(portfolioValue).toFixed(8)} ETH`,
     },
-    {
-      label: "Total Liquidity",
-      value: loading ? "..." : `${Number(totalLiquidity).toFixed(8)} ETH`,
-    },
+    // {
+    //   label: "Total Liquidity",
+    //   value: loading ? "..." : `${Number(totalLiquidity).toFixed(8)} ETH`,
+    // },
     {
       label: "Active Pools",
       value: loading ? "..." : activePools.toString(),
     },
-    {
-      label: "Estimated APR",
-      value: loading ? "..." : `${profit}%`,
-    },
+    // {
+    //   label: "Estimated APR",
+    //   value: loading ? "..." : `${profit}%`,
+    // },
   ];
 
   return (

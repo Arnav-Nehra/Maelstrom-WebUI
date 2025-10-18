@@ -330,8 +330,8 @@ export class ContractClient implements IContractClient {
         return ((Number(buyPrice) + Number(sellPrice)) / Number(2)).toString();
     }
 
-    private getAPR(volume24h: string, totalLiquidity: string): string {
-        return ((Number(volume24h) * Number(0.03) * Number(365)) / Number(totalLiquidity)).toString();//Custom 3% trade fee
+    private getAPR(poolYield: string): string {
+        return (Number(poolYield) * 365 * 24 * 60 * 60 * 100).toString();//Custom 3% trade fee
     }
 
     private async getBlockTimestamp(blockNumber: bigint): Promise<number> {
@@ -692,8 +692,12 @@ export class ContractClient implements IContractClient {
             const volume24h = await this.get24hVolume(token);
             const avgPrice = this.getAvgPrice(buyPrice, sellPrice);
             const totalLiquidity = this.getTotalLiquidity(avgPrice, reserve);
-            const apr = this.getAPR(volume24h, totalLiquidity);
+            const feeEventsCount = await this.getPoolFeeEventsCount(token);
+            const poolFeesEvents = await this.getPoolFeeEvents(token, Math.max(feeEventsCount - 10, 0), feeEventsCount-1);
+            const poolYield = this.getYield(poolFeesEvents, totalLiquidity);
+            const apr = this.getAPR(String(poolYield));
             const lastExchangeTs = await this.getLastExchangeTimestamp(token);
+
             return {
                 token: token,
                 reserve: reserve,
@@ -857,6 +861,20 @@ export class ContractClient implements IContractClient {
         }
     }
 
+    private async getPoolFeeEventsCount(token: Token): Promise<number> {
+        try {
+            const data = await this.publicClient?.readContract({
+                address: this.contractAddress,
+                abi: ABI,
+                functionName: 'getPoolFeeEventsCount',
+                args: [token.address]
+            });
+            return Number(data);
+        } catch (error) {
+            throw new Error(`Error fetching pool fee events count: ${(error as Error).message}`);
+        }
+    }
+
     async getPoolFeeEvents(token: Token, startIndex: number, endIndex: number): Promise<PoolFeesEvent[]> {
         try {
             const data = await this.publicClient?.readContract({
@@ -878,12 +896,12 @@ export class ContractClient implements IContractClient {
         }
     }
 
-    public getYield(feeEvents: PoolFeesEvent[]): number {
+    public getYield(feeEvents: PoolFeesEvent[], totalLiquidity: string): number {
         let totalFees = 0;
         feeEvents.forEach(event => {
             totalFees += Number(event.fee);
         });
         const totalTime = (feeEvents[feeEvents.length - 1].timestamp - feeEvents[0].timestamp) / (1000 * 60 * 60 * 24); //days
-        return totalFees / totalTime;
+        return totalFees / (totalTime * Number(totalLiquidity));
     }
 }
