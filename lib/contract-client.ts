@@ -30,6 +30,18 @@ export class ContractClient implements IContractClient {
         }
     }
 
+    async isPoolInstantiated(token: Address): Promise<boolean> {
+        const data = await this.publicClient?.readContract({
+            address: this.contractAddress,
+            abi: ABI,
+            functionName: 'poolToken',
+            args: [token]
+        });
+        console.log("isPoolInstantiated data:", data);
+        if (data && data === "0x0000000000000000000000000000000000000000") return false;
+        return true;
+    }
+
     async initializePool(initPool: InitPool): Promise<InitPoolResult> {
         try {
             const result: InitPoolResult = {
@@ -43,7 +55,7 @@ export class ContractClient implements IContractClient {
                 address: this.contractAddress,
                 abi: ABI,
                 functionName: 'initializePool',
-                args: [initPool.token as Address, BigInt(initPool.tokenAmount), BigInt(initPool.inititalBuyPrice), BigInt(initPool.initialSellPrice)],
+                args: [initPool.token as Address, BigInt(initPool.tokenAmount), BigInt(initPool.initialBuyPrice), BigInt(initPool.initialSellPrice)],
                 value: BigInt(initPool.ethAmount)
             });
             result.txHash = txHash;
@@ -331,7 +343,7 @@ export class ContractClient implements IContractClient {
     }
 
     private getAPR(poolYield: string): string {
-        return (Number(poolYield) * 365  * 100).toString();
+        return (Number(poolYield) * 365 * 100).toString();
     }
 
     private async getBlockTimestamp(blockNumber: bigint): Promise<number> {
@@ -639,7 +651,7 @@ export class ContractClient implements IContractClient {
                 )
                 result = (logs || []).map((log, index) => ({
                     token: tokens[index],
-                     ethAmount: log.args.amountEther.toString(),
+                    ethAmount: log.args.amountEther.toString(),
                     tokenAmount: log.args.amountToken.toString(),
                     lpTokensMinted: log.args.lpTokensMinted.toString(),
                     timestamp: timestamps[index],
@@ -904,7 +916,7 @@ export class ContractClient implements IContractClient {
                 args: [token.address, BigInt(startIndex), BigInt(endIndex)]
             });
             const result: PoolFeesEvent[] = [];
-            if(!data) throw new Error("No data returned from readContract");
+            if (!data) throw new Error("No data returned from readContract");
             for (let i = 0; i < (data).length; i++) {
                 result.push({
                     timestamp: Number(data[i].timestamp) * 1000,

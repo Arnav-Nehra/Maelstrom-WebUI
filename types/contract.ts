@@ -19,6 +19,7 @@ export interface IContractClient {
     buy(buyReq: BuyRequest): Promise<BuyResult>
     sell(sellReq: SellRequest): Promise<SellResult>
 
+    isPoolInstantiated(token: Address) : Promise<boolean>
     getPool(token: Token, user: Address): Promise<Pool>
     getToken(token: Address): Promise<Token>
     getLPToken(token: Token, user: Address): Promise<LiquidityPoolToken>

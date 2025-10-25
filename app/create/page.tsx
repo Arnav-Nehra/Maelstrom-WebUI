@@ -36,6 +36,7 @@ export default function CreatePoolPage() {
   const [tokenURL, setTokenURL] = useState("");
   const [lessETHValue, setLessETHValue] = useState(false);
   const [moreETHValue, setMoreETHValue] = useState(false);
+  const [isInstantiated, setIsInstantiated] = useState(false);
 
   const [formData, setFormData] = useState<InitPool>({
     token: "",
@@ -58,26 +59,29 @@ export default function CreatePoolPage() {
       ...prev,
       [field]: value,
     }));
-    
+
     // Create updated values object with the new value
     const updatedValues = {
       ...formData,
       [field]: value,
     };
-    
+
     setLessETHValue(false);
     setMoreETHValue(false);
-    
+    setIsInstantiated(false);
     // Use updatedValues instead of formData to get the current values
     const tokenAmount = parseFloat(updatedValues.tokenAmount);
     const ethAmount = parseFloat(updatedValues.ethAmount);
     const buyPrice = parseFloat(updatedValues.initialBuyPrice);
     const sellPrice = parseFloat(updatedValues.initialSellPrice);
-    
+
     if (tokenAmount && (buyPrice || sellPrice)) {
-      const avgPrice = buyPrice && sellPrice ? (buyPrice + sellPrice) / 2 : (buyPrice || sellPrice);
+      const avgPrice =
+        buyPrice && sellPrice
+          ? (buyPrice + sellPrice) / 2
+          : buyPrice || sellPrice;
       const impliedETHValue = tokenAmount * avgPrice;
-      
+
       if (ethAmount) {
         if (impliedETHValue < ethAmount * 0.25) {
           setMoreETHValue(true);
@@ -89,14 +93,18 @@ export default function CreatePoolPage() {
   };
 
   const validateTokenAddress = async (tokenAddress: string) => {
+    setIsInstantiated(false);
     if (!isAddress(tokenAddress)) {
       setTokenInfo(null);
       return;
     }
-
     setIsValidatingToken(true);
     try {
       const token = await contractClient.getToken(tokenAddress as Address);
+      const instantiated = await contractClient.isPoolInstantiated(
+        tokenAddress as Address
+      );
+      if (instantiated) setIsInstantiated(true);
       setTokenInfo({
         symbol: token.symbol,
         name: token.name,
@@ -339,6 +347,26 @@ export default function CreatePoolPage() {
                       <p className="text-xs text-muted-foreground">
                         Decimals: {tokenInfo.decimals}
                       </p>
+                    </div>
+                  )}
+                  {isInstantiated && (
+                    <div className="p-4 rounded-lg bg-gradient-to-br from-blue-500/15 via-blue-500/10 to-blue-500/5 border border-blue-500/30 backdrop-blur-sm">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-start gap-2 flex-1">
+                          <p className="text-sm text-white leading-relaxed">
+                            A pool already exists for this token
+                          </p>
+                        </div>
+                        <Button
+                          onClick={() =>
+                            (window.location.href = `/pools/?tokenAddress=${formData.token}`)
+                          }
+                          size="sm"
+                          className="bg-white hover:bg-white/90 text-black font-medium shrink-0 transition-all duration-200 hover:scale-105"
+                        >
+                          View Pool
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </div>
